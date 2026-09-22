@@ -1,0 +1,39 @@
+{
+  "Linear Regression": {
+    "MAE": 3.6987,
+    "RMSE": 4.5543,
+    "R2": 0.8785,
+    "CV_R2": 0.8823
+  },
+  "Ridge": {
+    "MAE": 3.6987,
+    "RMSE": 4.5542,
+    "R2": 0.8785,
+    "CV_R2": 0.8823
+  },
+  "Lasso": {
+    "MAE": 3.6975,
+    "RMSE": 4.5553,
+    "R2": 0.8785,
+    "CV_R2": 0.882
+  },
+  "Random Forest": {
+    "MAE": 1.3687,
+    "RMSE": 1.7972,
+    "R2": 0.9811,
+    "CV_R2": 0.98
+  },
+  "Gradient Boosting": {
+    "MAE": 0.5038,
+    "RMSE": 0.6716,
+    "R2": 0.9974,
+    "CV_R2": 0.9972
+  },
+  "Extra Trees": {
+    "MAE": 1.2967,
+    "RMSE": 1.7012,
+    "R2": 0.9831,
+    "CV_R2": 0.9812
+  },
+  "best_model": "Gradient Boosting"
+}

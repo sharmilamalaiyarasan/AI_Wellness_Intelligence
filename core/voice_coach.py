@@ -172,49 +172,164 @@ def get_ui_text(key: str, lang: str = "en") -> str:
     return UI_STRINGS.get(lang, UI_STRINGS["en"]).get(key, UI_STRINGS["en"].get(key, key))
 
 
-def get_voice_audio_html(text: str, lang: str = "en", element_id: Optional[str] = None) -> str:
+_AUDIO_CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "audio_cache")
+os.makedirs(_AUDIO_CACHE_DIR, exist_ok=True)
+_IN_MEMORY_AUDIO_CACHE: Dict[str, bytes] = {}
+
+
+def get_voice_audio_bytes(text: str, lang: str = "en") -> Optional[bytes]:
     """
-    Build high-performance Web Speech API synthesis HTML/JavaScript.
-    Speaks with native English ('en-US') or Tamil ('ta-IN') voice directly in the browser.
+    Generate or fetch cached MP3 audio bytes using gTTS.
+    Supports English ('en') and Tamil ('ta').
+    """
+    if not text:
+        return None
+
+    cache_key = f"{text.strip()}_{lang}"
+    if cache_key in _IN_MEMORY_AUDIO_CACHE:
+        return _IN_MEMORY_AUDIO_CACHE[cache_key]
+
+    h = hashlib.md5(cache_key.encode("utf-8")).hexdigest()
+    disk_path = os.path.join(_AUDIO_CACHE_DIR, f"{h}.mp3")
+
+    if os.path.exists(disk_path) and os.path.getsize(disk_path) > 0:
+        try:
+            with open(disk_path, "rb") as f:
+                audio_bytes = f.read()
+            _IN_MEMORY_AUDIO_CACHE[cache_key] = audio_bytes
+            return audio_bytes
+        except Exception:
+            pass
+
+    # Generate with gTTS
+    try:
+        from gtts import gTTS
+        tts_lang = "ta" if lang == "ta" else "en"
+        tts = gTTS(text=text, lang=tts_lang, slow=False)
+        tts.save(disk_path)
+        with open(disk_path, "rb") as f:
+            audio_bytes = f.read()
+        _IN_MEMORY_AUDIO_CACHE[cache_key] = audio_bytes
+        return audio_bytes
+    except Exception as e:
+        print(f"[VoiceCoach] gTTS audio generation failed for '{text[:20]}': {e}")
+        return None
+
+
+def get_voice_audio_base64(text: str, lang: str = "en") -> Optional[str]:
+    """Retrieve base64-encoded MP3 string for data URL playback."""
+    audio_bytes = get_voice_audio_bytes(text, lang)
+    if audio_bytes:
+        return base64.b64encode(audio_bytes).decode("ascii")
+    return None
+
+
+def get_voice_audio_html(text: str, lang: str = "en", element_id: Optional[str] = None, show_controls: bool = False) -> str:
+    """
+    Build HTML5 audio element with base64 MP3 data URL + Web Speech Synthesis fallback.
+    Guarantees audible playback across modern browsers even when autoplay is restricted.
     """
     if not text:
         return ""
 
+    import json
     safe_id = element_id or f"voice_cue_{int(time.time() * 1000)}"
-    clean_js_text = text.replace("'", "\\'").replace('"', '\\"').replace("\n", " ")
-    speech_lang = "ta-IN" if lang == "ta" else "en-US"
+    b64_audio = get_voice_audio_base64(text, lang)
+    clean_text_json = json.dumps(text.strip())
+    lang_code_json = json.dumps("ta" if lang == "ta" else "en")
 
-    return f"""
-    <div id="{safe_id}_container" style="display:none;">
-        <script>
-            (function() {{
-                try {{
-                    if ('speechSynthesis' in window) {{
-                        // Cancel any pending speech to avoid overlapping/stale cues
-                        window.speechSynthesis.cancel();
-                        var utterance = new SpeechSynthesisUtterance("{clean_js_text}");
-                        utterance.lang = "{speech_lang}";
-                        utterance.rate = 1.0;
-                        utterance.pitch = 1.0;
-                        utterance.volume = 1.0;
+    js_snippet = f"""
+    <script>
+    (function() {{
+        function speakNow() {{
+            try {{
+                var audioEl = document.getElementById("{safe_id}_audio");
+                var played = false;
+                if (audioEl) {{
+                    var prom = audioEl.play();
+                    if (prom !== undefined) {{
+                        prom.then(function() {{ played = true; }}).catch(function(e) {{
+                            triggerWebSpeech();
+                        }});
+                    }}
+                }} else {{
+                    triggerWebSpeech();
+                }}
+            }} catch(ex) {{
+                triggerWebSpeech();
+            }}
+        }}
 
-                        // Try to find matching voice
-                        var voices = window.speechSynthesis.getVoices();
+        function triggerWebSpeech() {{
+            try {{
+                var synth = window.speechSynthesis || (window.parent && window.parent.speechSynthesis);
+                if (synth) {{
+                    synth.cancel();
+                    var u = new SpeechSynthesisUtterance({clean_text_json});
+                    u.lang = ({lang_code_json} === 'ta') ? 'ta-IN' : 'en-US';
+                    u.rate = 1.0;
+                    u.pitch = 1.0;
+                    u.volume = 1.0;
+                    var voices = synth.getVoices();
+                    if (voices && voices.length > 0) {{
                         for (var i = 0; i < voices.length; i++) {{
-                            if (voices[i].lang === "{speech_lang}" || voices[i].lang.startsWith("{speech_lang.split('-')[0]}")) {{
-                                utterance.voice = voices[i];
+                            if (voices[i].lang && voices[i].lang.toLowerCase().indexOf({lang_code_json}) !== -1) {{
+                                u.voice = voices[i];
                                 break;
                             }}
                         }}
-                        window.speechSynthesis.speak(utterance);
                     }}
-                }} catch (e) {{
-                    console.error("Speech synthesis error:", e);
+                    synth.speak(u);
                 }}
-            }})();
-        </script>
-    </div>
+            }} catch(e) {{
+                console.warn("Speech synthesis notice:", e);
+            }}
+        }}
+
+        if (document.readyState === "complete" || document.readyState === "interactive") {{
+            setTimeout(speakNow, 80);
+        }} else {{
+            window.addEventListener("DOMContentLoaded", function() {{ setTimeout(speakNow, 80); }});
+        }}
+    }})();
+    </script>
     """
+
+    audio_src = f'data:audio/mp3;base64,{b64_audio}' if b64_audio else ''
+    audio_tag = f'<audio id="{safe_id}_audio" autoplay="true" style="display:none;"><source src="{audio_src}" type="audio/mp3"></audio>' if audio_src else ''
+
+    if show_controls:
+        return f"""
+        <div id="{safe_id}_wrap" style="margin:10px 0;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.30);border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:700;color:#FFFFFF;display:flex;align-items:center;gap:6px;">
+              <span>🔊</span> <span>{text}</span>
+            </div>
+            <button onclick="(function(){{
+                var el = document.getElementById('{safe_id}_audio');
+                if (el) {{ el.currentTime = 0; el.play(); }}
+                var synth = window.speechSynthesis || (window.parent && window.parent.speechSynthesis);
+                if (synth) {{
+                    var u = new SpeechSynthesisUtterance({clean_text_json});
+                    u.lang = ({lang_code_json} === 'ta') ? 'ta-IN' : 'en-US';
+                    synth.speak(u);
+                }}
+            }})()" style="background:#FFFFFF;color:#4338CA;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+              ▶ Replay
+            </button>
+          </div>
+          {f'<audio controls id="{safe_id}_audio_ctrl" style="width:100%;height:32px;border-radius:6px;"><source src="{audio_src}" type="audio/mp3"></audio>' if audio_src else ''}
+          {audio_tag}
+          {js_snippet}
+        </div>
+        """
+    else:
+        return f"""
+        <div id="{safe_id}_wrap" style="display:none;">
+          {audio_tag}
+          {js_snippet}
+        </div>
+        """
 
 
 class VoiceCoach:
@@ -303,3 +418,9 @@ class VoiceCoach:
         self.last_speech_time = time.time()
         self.last_spoken_phrase = text_to_speak
         return get_voice_audio_html(text_to_speak, self.language)
+
+    def trigger_speech_bytes(self, text_to_speak: str) -> Optional[bytes]:
+        """Record speech trigger and return raw audio bytes for st.audio playback."""
+        self.last_speech_time = time.time()
+        self.last_spoken_phrase = text_to_speak
+        return get_voice_audio_bytes(text_to_speak, self.language)
