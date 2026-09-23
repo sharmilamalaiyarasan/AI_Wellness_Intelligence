@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="assets/architecture_diagram.png" width="850" alt="AI Wellness Intelligence System Architecture" />
-</div>
+# 🧠 AI Wellness Intelligence Platform
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" />
@@ -12,7 +10,6 @@
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
 </p>
 
-# 🧠 AI Wellness Intelligence Platform
 ### *Dual-Stream End-to-End Pose & Lifestyle Wellness Processing*
 
 An intelligent, multimodal health and fitness analytics platform combining **real-time computer vision pose estimation** with **lifestyle biometric analytics, machine learning, and AI companion guidance**.
