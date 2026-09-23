@@ -206,5 +206,5 @@ Once launched in your browser (default `http://localhost:8501`), access the key 
 ---
 
 ## 👥 Contributors & Acknowledgements
-- Developed by **Sharmila**,**Tabitha Merin Clitus**, **Parkavi C** ([GitHub Profile](https://github.com/sharmilamalaiyarasan))
+- Developed by **Sharmila M**,**Tabitha Merin Clitus**, **Parkavi C** ([GitHub Profile](https://github.com/sharmilamalaiyarasan))
 - Built with **MediaPipe**, **Streamlit**, **Scikit-Learn**, and **OpenCV**.
