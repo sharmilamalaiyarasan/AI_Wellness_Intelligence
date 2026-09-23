@@ -78,6 +78,35 @@ flowchart TD
 
 ---
 
+## 📱 App UI & Interface Previews
+
+### 1. 🔮 Predict My Wellness Score & NOVA AI Companion
+The interactive wellness score predictor with 4-pillar lifestyle data collection (Personal, Activity, Recovery, Wellness), real-time animated AI companion **NOVA**, holistic circular progress gauge, radar breakdown chart, driver impact analysis, and counterfactual simulation.
+
+<div align="center">
+  <img src="assets/predict_score_ui_preview.png" width="850" alt="Predict My Wellness Score UI Preview" />
+</div>
+
+---
+
+### 2. 📅 Workout Plan & Activity Dashboard
+Personalized workout planning with daily focus recommendations, muscle group targeted visualization, weekly progress tracker, and exercise sets/reps breakdown.
+
+<div align="center">
+  <img src="assets/dashboard_preview.png" width="850" alt="Workout Plan and Activity Dashboard UI" />
+</div>
+
+---
+
+### 3. 🏃 Live AI Coach & Pose Correction Stream
+Real-time MediaPipe BlazePose skeletal tracking, automatic repetition counting, joint angle feedback (e.g. knee angle 92°), and post-workout summary with form accuracy scoring.
+
+<div align="center">
+  <img src="assets/app_screens_preview.png" width="850" alt="Live Workout Pose Estimation and Summary UI" />
+</div>
+
+---
+
 ## ✨ Key Platform Features
 
 ### 1. 📷 Real-Time Pose Correction & Rep Counting
@@ -121,6 +150,9 @@ AI_Wellness_Intelligence/
 │   └── wellness_score.py          # Holistic wellness scoring formula
 ├── assets/                        # Static UI assets and animations
 │   ├── architecture_diagram.png   # Dual-stream system architecture diagram
+│   ├── predict_score_ui_preview.png # Predict My Wellness Score UI preview
+│   ├── dashboard_preview.png      # Workout plan dashboard preview
+│   ├── app_screens_preview.png    # Live pose estimation mobile UI preview
 │   ├── nova_avatar.png            # AI companion profile badge
 │   ├── nova_companion_high.gif    # Peak wellness looping animation
 │   ├── nova_companion_good.gif    # Good balance looping animation
@@ -182,7 +214,7 @@ streamlit run app.py
 ```
 
 > [!TIP]
-> If you are running from the parent repository directory, use:
+> If you are running from the parent workspace directory, run:
 > ```bash
 > streamlit run AI_Wellness_Intelligence/app.py
 > ```
